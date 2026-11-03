@@ -1,7 +1,13 @@
+// imgui_node_editor_internal.h needs ImVec2's operators, which imgui.h declares only if this is
+// defined before it's first included.
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include "node_editor_extra.h"
 
 #include "imgui.h"
 #include "imgui_node_editor.h"
+#include "imgui_node_editor_internal.h"
 
 #include <cstring>
 #include <vector>
@@ -34,6 +40,26 @@ static uintptr_t value(ed::LinkId id) { return id.Get(); }
 static ImVec2 to_imgui(ImVec2_c value) { return ImVec2(value.x, value.y); }
 static ImVec4 to_imgui(ImVec4_c value) { return ImVec4(value.x, value.y, value.z, value.w); }
 static ImVec2_c from_imgui(ImVec2 value) { return ImVec2_c{value.x, value.y}; }
+
+// imgui-node-editor keeps the editor's navigation private, and its API has no call that sets the
+// view. An explicit instantiation may name a private member, so this reaches it without patching
+// the library, and fails to compile rather than misbehaving if the member is ever renamed.
+namespace {
+using NavigateActionMember = ed::Detail::NavigateAction ed::Detail::EditorContext::*;
+NavigateActionMember navigate_action_member();
+
+template <NavigateActionMember Member>
+struct NavigateActionAccess {
+    friend NavigateActionMember navigate_action_member() { return Member; }
+};
+template struct NavigateActionAccess<&ed::Detail::EditorContext::m_NavigateAction>;
+
+ed::Detail::NavigateAction& current_navigate_action()
+{
+    auto* editor = reinterpret_cast<ed::Detail::EditorContext*>(ed::GetCurrentEditor());
+    return editor->*navigate_action_member();
+}
+} // namespace
 static ImVec4_c from_imgui(ImVec4 value) { return ImVec4_c{value.x, value.y, value.z, value.w}; }
 
 static ed::EditorContext* raw_editor(DneEditorContext* ctx)
@@ -1105,6 +1131,23 @@ CIMGUI_API void dne_end_shortcut()
 CIMGUI_API float dne_get_current_zoom()
 {
     return ed::GetCurrentZoom();
+}
+
+CIMGUI_API void dne_get_view_rect(ImVec2_c* min, ImVec2_c* max)
+{
+    const ImRect rect = current_navigate_action().GetViewRect();
+    if (min)
+        *min = from_imgui(rect.Min);
+    if (max)
+        *max = from_imgui(rect.Max);
+}
+
+CIMGUI_API void dne_set_view_rect(ImVec2_c min, ImVec2_c max)
+{
+    current_navigate_action().NavigateTo(
+        ImRect(to_imgui(min), to_imgui(max)),
+        ed::Detail::NavigateAction::ZoomMode::Exact,
+        0.0f);
 }
 
 CIMGUI_API bool dne_get_hovered_node(uintptr_t* node)

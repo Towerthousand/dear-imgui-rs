@@ -92,6 +92,34 @@ impl EditorContext {
         });
     }
 
+    /// The part of the canvas the editor shows, as its `[min, max]` corners in canvas coordinates.
+    pub fn view_rect(&self) -> [[f32; 2]; 2] {
+        self.with_current("EditorContext::view_rect", || {
+            let mut min = crate::vec2([0.0, 0.0]);
+            let mut max = crate::vec2([0.0, 0.0]);
+            unsafe { sys::dne_get_view_rect(&mut min, &mut max) };
+            [crate::from_vec2(min), crate::from_vec2(max)]
+        })
+    }
+
+    /// Shows the part of the canvas between `min` and `max`, in canvas coordinates, at once and
+    /// without animating. The rect is fitted to the editor's size, keeping its aspect ratio, and
+    /// centred. It takes effect from the editor's next `begin`, and the zoom it implies isn't
+    /// clamped to the configured zoom levels.
+    pub fn set_view_rect(&self, min: [f32; 2], max: [f32; 2]) {
+        assert!(
+            min.iter().chain(&max).all(|value| value.is_finite()),
+            "EditorContext::set_view_rect requires finite corners"
+        );
+        assert!(
+            max[0] > min[0] && max[1] > min[1],
+            "EditorContext::set_view_rect requires max to be greater than min"
+        );
+        self.with_current("EditorContext::set_view_rect", || unsafe {
+            sys::dne_set_view_rect(crate::vec2(min), crate::vec2(max))
+        });
+    }
+
     pub(crate) fn assert_usable(&self, caller: &str) {
         assert!(
             self.imgui_binding.is_alive(),

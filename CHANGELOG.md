@@ -8,6 +8,10 @@ Changelog prose uses soft wrapping: do not hard-wrap paragraphs or bullet text j
 
 ## [Unreleased]
 
+### Added
+
+- Added `EditorContext::view_rect` and `EditorContext::set_view_rect` to `dear-node-editor`, backed by `dne_get_view_rect` and `dne_set_view_rect` in `dear-node-editor-sys`. They read and set the part of the canvas the editor shows, at once and without animating, so applications can drive panning and zooming themselves, for example from trackpad scrolling and pinch gestures.
+
 ## [0.18.0] - 2026-09-14
 
 ### Breaking Changes and Migration

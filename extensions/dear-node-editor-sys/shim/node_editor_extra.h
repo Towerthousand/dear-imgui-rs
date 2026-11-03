@@ -299,6 +299,11 @@ CIMGUI_API int dne_get_action_context_links(uintptr_t* links, int size);
 CIMGUI_API void dne_end_shortcut(void);
 
 CIMGUI_API float dne_get_current_zoom(void);
+// The part of the canvas the editor shows, in canvas coordinates.
+CIMGUI_API void dne_get_view_rect(ImVec2_c* min, ImVec2_c* max);
+// Shows the given part of the canvas at once, without animating, fitted to the editor's size and
+// centred. It takes effect from the editor's next Begin. The zoom isn't clamped to the zoom levels.
+CIMGUI_API void dne_set_view_rect(ImVec2_c min, ImVec2_c max);
 CIMGUI_API bool dne_get_hovered_node(uintptr_t* node_id);
 CIMGUI_API bool dne_get_hovered_pin(uintptr_t* pin_id);
 CIMGUI_API bool dne_get_hovered_link(uintptr_t* link_id);
